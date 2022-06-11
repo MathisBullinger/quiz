@@ -1,0 +1,21 @@
+service: quiz
+
+provider:
+  name: aws
+
+functions:
+  quizCreate:
+    handler: src/quiz.create
+    events:
+      - http:
+          path: /quiz/create
+          method: POST
+
+plugins:
+  - serverless-offline
+  - serverless-webpack
+
+custom:
+  serverless-offline:
+    httpPort: 6000
+    noPrependStageInUrl: true

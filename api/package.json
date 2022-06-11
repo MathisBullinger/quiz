@@ -1,0 +1,14 @@
+{
+  "scripts": {
+    "dev": "sls offline start"
+  },
+  "author": "Mathis Bullinger",
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.100",
+    "serverless": "^3.19.0",
+    "serverless-offline": "^8.8.0",
+    "serverless-webpack": "^5.7.1",
+    "ts-loader": "^9.3.0",
+    "typescript": "^4.7.3"
+  }
+}
