@@ -4,7 +4,12 @@
     "moduleResolution": "node",
     "target": "es6",
     "jsx": "react",
-    "jsxFactory": "h"
+    "jsxFactory": "React.createElement",
+    "jsxFragmentFactory": "React.Fragment",
+    "allowSyntheticDefaultImports": true,
+    "paths": {
+      "components/*": ["./src/components/*"]
+    }
   },
   "include": ["./src/**/*"]
 }

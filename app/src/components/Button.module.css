@@ -1,0 +1,12 @@
+.button {
+  background-color: var(--cl-primary);
+  color: var(--cl-background);
+  appearance: none;
+  border: none;
+  border-radius: 5px;
+  padding: 0.5em 1em;
+  font-family: inherit;
+  font-weight: 500;
+  font-size: 1rem;
+  cursor: pointer;
+}

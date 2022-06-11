@@ -1,18 +1,28 @@
 {
   "scripts": {
-    "dev": "parcel index.html"
+    "dev": "parcel index.html",
+    "build": "parcel build index.html"
   },
   "author": "Mathis Bullinger",
+  "alias": {
+    "components": "./src/components"
+  },
   "devDependencies": {
+    "@types/node": "^17.0.42",
+    "@types/react": "^18.0.12",
+    "@types/react-dom": "^18.0.5",
     "@typescript-eslint/parser": "^5.27.1",
     "eslint": "^8.17.0",
     "eslint-config-prettier": "^8.5.0",
     "eslint-config-react-app": "^7.0.1",
     "eslint-plugin-react": "^7.30.0",
     "parcel": "^2.6.0",
+    "process": "^0.11.10",
     "typescript": "^4.7.3"
   },
   "dependencies": {
-    "preact": "^10.7.3"
+    "itinero": "^0.8.0",
+    "react": "^18.1.0",
+    "react-dom": "^18.1.0"
   }
 }

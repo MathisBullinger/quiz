@@ -1,6 +1,21 @@
 :root {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial,
+  font-family: -apple-system, 'system-ui', 'Segoe UI', Helvetica, Arial,
     sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
-  background-color: #343233;
-  color: #efdab9;
+  font-size: 16px;
+
+  --cl-background: #343233;
+  --cl-text: #efdab9;
+  --cl-primary: #ffd152;
+  --cl-error: #b2492d;
+  --cl-warning: #d4a249;
+
+  background-color: var(--cl-background);
+  color: var(--cl-text);
+  box-sizing: border-box;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: inherit;
 }

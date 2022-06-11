@@ -1,5 +1,5 @@
-import { h, render } from 'preact';
+import React from 'react'
+import { createRoot } from 'react-dom/client'
 import App from './App'
 
-
-render(<App />, document.body);
+createRoot(document.body).render(<App />)

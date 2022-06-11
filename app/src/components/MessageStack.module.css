@@ -1,0 +1,20 @@
+.stack {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 1px;
+}
+
+.item {
+  width: 100%;
+  padding: 0.5em 1em;
+  background-color: var(--cl-error);
+}
+
+.item[data-type='warning'] {
+  background-color: var(--cl-warning);
+}
