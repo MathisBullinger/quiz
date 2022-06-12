@@ -3,6 +3,8 @@ service: quiz
 provider:
   name: aws
   stage: ${opt:stage, 'dev'}
+  environment:
+    stage: ${opt:stage, self:provider.stage, 'dev'}
 
 functions:
   quizCreate:
@@ -11,6 +13,48 @@ functions:
       - http:
           path: /quiz/create
           method: POST
+  quizGetEdit:
+    handler: src/quiz.getQuizEdit
+    events:
+      - http:
+          path: /quiz/edit/{key}
+          method: GET
+  quizEditMeta:
+    handler: src/quiz.editMeta
+    events:
+      - http:
+          path: /quiz/edit
+          method: PATCH
+  addQuestion:
+    handler: src/quiz.addQuestion
+    events:
+      - http:
+          path: /quiz/question/add
+          method: POST
+  editQuestion:
+    handler: src/quiz.editQuestion
+    events:
+      - http:
+          path: /quiz/question/edit
+          method: PATCH
+  addAnswer:
+    handler: src/quiz.addAnswer
+    events:
+      - http:
+          path: /quiz/answer/add
+          method: POST
+  editAnswer:
+    handler: src/quiz.editAnswer
+    events:
+      - http:
+          path: /quiz/answer/edit
+          method: PATCH
+  deleteAnswer:
+    handler: src/quiz.deleteAnswer
+    events:
+      - http:
+          path: /quiz/answer/delete
+          method: DELETE
 
 plugins:
   - serverless-webpack
@@ -21,6 +65,8 @@ custom:
   serverless-offline:
     httpPort: 5000
     noPrependStageInUrl: true
+  webpack:
+    webpackConfig: ./webpack.config.js
   dynamodb:
     stages:
       - dev

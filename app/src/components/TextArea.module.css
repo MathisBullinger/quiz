@@ -1,0 +1,35 @@
+.wrap {
+  position: relative;
+  --padd-top: 0.8em;
+}
+
+.text {
+  border: 1px solid var(--cl-text);
+  background-color: transparent;
+  color: var(--cl-text);
+  font-family: inherit;
+  font-size: 1em;
+  padding: var(--padd-top) 1em;
+  resize: none;
+  border-radius: 5px;
+}
+
+.text:focus {
+  outline: none;
+}
+
+.wrap label {
+  position: absolute;
+  padding: 0 0.2em;
+  left: 0.8em;
+  top: var(--padd-top);
+  transition: transform 0.3s ease, opacity 0.3s ease;
+  background-color: var(--cl-background);
+  transform: translateY(calc(var(--padd-top) * -1 - 50%)) scale(0.88);
+  transform-origin: left;
+}
+
+.text:empty:not(:focus) + label {
+  opacity: 0.5;
+  transform: none;
+}

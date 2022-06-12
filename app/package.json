@@ -21,6 +21,7 @@
     "typescript": "^4.7.3"
   },
   "dependencies": {
+    "froebel": "^0.17.0",
     "itinero": "^0.8.0",
     "react": "^18.1.0",
     "react-dom": "^18.1.0"

@@ -10,3 +10,17 @@
   font-size: 1rem;
   cursor: pointer;
 }
+
+.button:disabled {
+  cursor: default;
+  background-color: var(--cl-text);
+}
+
+.button[data-style='text'] {
+  background-color: transparent;
+  color: var(--cl-text);
+  padding: 0;
+  font-weight: normal;
+  font-size: 0.88rem;
+  text-transform: uppercase;
+}
