@@ -2,6 +2,7 @@ import React from 'react'
 import { Switch, Route, Redirect } from 'itinero'
 import Home from './pages/Home'
 import Edit from './pages/Edit'
+import Quiz from './pages/Quiz'
 import * as Context from './context'
 import MessageStack from 'components/MessageStack'
 
@@ -11,6 +12,7 @@ const App = () => (
     <Switch>
       <Route path="/">{Home}</Route>
       <Route path="/edit/:key">{Edit}</Route>
+      <Route path="/:id">{Quiz}</Route>
       <Redirect to="/" />
     </Switch>
   </Context.Provider>

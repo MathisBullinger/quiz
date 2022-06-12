@@ -5,6 +5,11 @@
   padding: 2rem;
 }
 
+.edit > span {
+  display: block;
+  margin-bottom: 1em;
+}
+
 .questions {
   list-style: none;
   padding: 0;

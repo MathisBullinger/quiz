@@ -33,7 +33,8 @@ const Main: FC<QueryResult<'getQuizEdit'> & { quizKey: string }> = ({
   quizKey,
   ...initial
 }) => {
-  const link = `${location.origin}/${quizId}`
+  const linkParticipate = `${location.origin}/${quizId}`
+  const linkHost = `${location.origin}/host/${quizKey}`
   const [questions, setQuestions] = useState(initial.questions)
   const [questionDiff, setQuestionDiff] = useState<
     Record<
@@ -174,11 +175,11 @@ const Main: FC<QueryResult<'getQuizEdit'> & { quizKey: string }> = ({
   return (
     <div className={styles.edit}>
       <span>
-        Editing quiz{' '}
-        <a href={link} rel="noopener noreferrer">
-          {link}
-        </a>
-        . Note: Save this link. Without it you can't access to this quiz.
+        Editing quiz <a href={linkParticipate}>{linkParticipate}</a>. Note: Save
+        this link. Without it you can't access to this quiz.
+      </span>
+      <span>
+        Host this quiz at <a href={linkHost}>{linkHost}</a>.
       </span>
       <div className={styles.title}>
         <Button disabled={title === savedTitle} onClick={saveTitle}>

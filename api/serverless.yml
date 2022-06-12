@@ -8,53 +8,60 @@ provider:
 
 functions:
   quizCreate:
-    handler: src/quiz.create
+    handler: src/edit.create
     events:
       - http:
           path: /quiz/create
           method: POST
   quizGetEdit:
-    handler: src/quiz.getQuizEdit
+    handler: src/edit.getQuizEdit
     events:
       - http:
           path: /quiz/edit/{key}
           method: GET
   quizEditMeta:
-    handler: src/quiz.editMeta
+    handler: src/edit.editMeta
     events:
       - http:
           path: /quiz/edit
           method: PATCH
   addQuestion:
-    handler: src/quiz.addQuestion
+    handler: src/edit.addQuestion
     events:
       - http:
           path: /quiz/question/add
           method: POST
   editQuestion:
-    handler: src/quiz.editQuestion
+    handler: src/edit.editQuestion
     events:
       - http:
           path: /quiz/question/edit
           method: PATCH
   addAnswer:
-    handler: src/quiz.addAnswer
+    handler: src/edit.addAnswer
     events:
       - http:
           path: /quiz/answer/add
           method: POST
   editAnswer:
-    handler: src/quiz.editAnswer
+    handler: src/edit.editAnswer
     events:
       - http:
           path: /quiz/answer/edit
           method: PATCH
   deleteAnswer:
-    handler: src/quiz.deleteAnswer
+    handler: src/edit.deleteAnswer
     events:
       - http:
           path: /quiz/answer/delete
           method: DELETE
+
+  getQuiz:
+    handler: src/quiz.get
+    events:
+      - http:
+          path: /quiz/{id}
+          method: GET
 
 plugins:
   - serverless-webpack

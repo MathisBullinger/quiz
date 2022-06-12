@@ -30,3 +30,16 @@ export const question = new DDB(
   },
   edit.client
 )
+
+export const quiz = new DDB(
+  'quiz',
+  {
+    [DDB.key]: ['pk', 'sk'],
+    pk: String,
+    sk: String,
+    key: String,
+    title: String,
+    status: String,
+  },
+  edit.client
+)

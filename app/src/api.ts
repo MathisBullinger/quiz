@@ -19,6 +19,11 @@ export type Question = {
 
 type AnswerOption = { id: string; text: string }
 
+export type QuizMeta = {
+  title: string
+  status: 'pending'
+}
+
 export const useAPI = () => {
   const context = useAppContext()
 
@@ -95,6 +100,9 @@ export const useAPI = () => {
       answerId,
     })
 
+  const getQuiz = async (id: string) =>
+    await request<QuizMeta>(`quiz/${id}`, 'GET')
+
   return {
     createQuiz,
     getQuizEdit,
@@ -104,6 +112,7 @@ export const useAPI = () => {
     addAnswer,
     editAnswer,
     deleteAnswer,
+    getQuiz,
   }
 }
 
