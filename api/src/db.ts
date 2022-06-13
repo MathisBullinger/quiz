@@ -44,3 +44,15 @@ export const quiz = new DDB(
   },
   edit.client
 )
+
+export const connection = new DDB(
+  'quiz',
+  {
+    [DDB.key]: ['pk', 'sk'],
+    pk: String,
+    sk: String,
+    userId: String,
+    quizzes: [String],
+  },
+  edit.client
+)

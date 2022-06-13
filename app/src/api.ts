@@ -24,6 +24,11 @@ export type QuizMeta = {
   status: 'pending'
 }
 
+export type Player = {
+  id: string
+  name: string
+}
+
 export const useAPI = () => {
   const context = useAppContext()
 

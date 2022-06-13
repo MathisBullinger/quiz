@@ -67,6 +67,16 @@ functions:
           method: GET
           cors: true
 
+  connectHandler:
+    handler: src/ws.handler
+    events:
+      - websocket:
+          route: $connect
+      - websocket:
+          route: $disconnect
+      - websocket:
+          route: $default
+
 plugins:
   - serverless-webpack
   - serverless-offline
