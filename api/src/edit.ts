@@ -17,7 +17,7 @@ export const create = async (): Promise<APIGatewayProxyResult> => {
       })
       .ifNotExists(),
     db.quiz
-      .put({ pk: quizId, sk: 'status', key, status: 'pending' })
+      .put({ pk: quizId, sk: 'status', key, status: 'pending', players: [] })
       .ifNotExists(),
   ])
 

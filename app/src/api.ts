@@ -36,6 +36,7 @@ export const useAPI = () => {
       const result = await fetch(`${process.env.API_ENDPOINT}/${path}`, {
         method,
         body: body ? JSON.stringify(body) : undefined,
+        credentials: 'include',
       })
       const data = await result.json().catch(() => undefined)
       if (result.status >= 400) throw new APIError(result.status, data)

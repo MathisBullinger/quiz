@@ -3,8 +3,11 @@ service: quiz
 provider:
   name: aws
   stage: ${opt:stage, 'dev'}
+  region: eu-west-1
   environment:
     stage: ${opt:stage, self:provider.stage, 'dev'}
+    JWT_PUBLIC: ${ssm:/quiz/jwt/public}
+    JWT_SECRET: ${ssm:/quiz/jwt/secret}
 
 functions:
   quizCreate:
@@ -62,6 +65,7 @@ functions:
       - http:
           path: /quiz/{id}
           method: GET
+          cors: true
 
 plugins:
   - serverless-webpack

@@ -5,6 +5,7 @@
   "author": "Mathis Bullinger",
   "devDependencies": {
     "@types/aws-lambda": "^8.10.100",
+    "@types/jsonwebtoken": "^8.5.8",
     "serverless": "^3.19.0",
     "serverless-offline": "^8.8.0",
     "serverless-webpack": "^5.7.1",
@@ -14,6 +15,7 @@
   "dependencies": {
     "ddbjs": "^0.19.0",
     "froebel": "^0.17.0",
+    "jsonwebtoken": "^8.5.1",
     "serverless-dynamodb-local": "^0.2.40"
   }
 }

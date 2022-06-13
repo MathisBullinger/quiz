@@ -40,6 +40,7 @@ export const quiz = new DDB(
     key: String,
     title: String,
     status: String,
+    players: [],
   },
   edit.client
 )
