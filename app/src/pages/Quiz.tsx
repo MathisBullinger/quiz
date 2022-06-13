@@ -1,10 +1,11 @@
 import React, { FC, useEffect, useState } from 'react'
 import { RouteProps } from 'itinero'
-import styles from './Quiz.module.css'
+import * as styles from './Quiz.module.css'
 import { useAPICall, APIError, QuizMeta, Player } from '../api'
 import { useAppContext } from '../context'
 import { history } from 'itinero'
 import * as ws from '../ws'
+import { useComputed } from '../hooks'
 
 const Quiz: FC<RouteProps<{}, { id: string }>> = ({ match }) => {
   const [loading, result, error] = useAPICall('getQuiz', match.id)
@@ -17,11 +18,6 @@ const Quiz: FC<RouteProps<{}, { id: string }>> = ({ match }) => {
     }
   }, [error])
 
-  // useEffect(() => {
-  //   if (!result?.auth) return
-  //   ws.send({ type: 'authenticate', token: result.auth, quizId: match.id })
-  // }, [result, match.id])
-
   if (loading || error) return null
   return <Main quizId={match.id} {...result} />
 }
@@ -29,39 +25,39 @@ const Quiz: FC<RouteProps<{}, { id: string }>> = ({ match }) => {
 export default Quiz
 
 const Main: FC<QuizMeta & { quizId: string }> = ({ quizId, title, status }) => {
-  // const playerList = useSortedPlayers(players, me)
+  const user = ws.useSubscribe('user')
+  const { peers } = ws.useSubscribe('peers') ?? {}
+  const players = useComputed(
+    (a, b) => [...(a ? [a] : []), ...(b ?? [])],
+    user,
+    peers
+  )
 
   useEffect(() => {
-    ws.send({ type: 'join', quizId })
+    const existing = localStorage.getItem(quizId)
+    if (existing) {
+      const { auth } = JSON.parse(existing)
+      ws.send({ type: 'restore', auth, quizId })
+    } else ws.send({ type: 'join', quizId })
   }, [quizId])
+
+  useEffect(() => {
+    if (!user) return
+    localStorage.setItem(quizId, JSON.stringify(user))
+  }, [quizId, user])
 
   return (
     <div className={styles.root}>
       <h1>{title}</h1>
-      {/* <ul>
-        {playerList.map(({ id, name }) => (
+      <ul>
+        {players.map(({ id, name }) => (
           <li key={id}>{name}</li>
         ))}
-      </ul> */}
+      </ul>
       {status === 'pending' && <Pending />}
     </div>
   )
 }
-
-const useSortedPlayers = (players: Player[], me: string) => {
-  const [sorted, setSorted] = useState<Player[]>([])
-
-  useEffect(() => {
-    setSorted(
-      players.sort((a, b) => playerSortScore(a, me) - playerSortScore(b, me))
-    )
-  }, [players])
-
-  return sorted
-}
-
-const playerSortScore = (player: Player, me: string) =>
-  player.id === me ? 0 : Infinity
 
 const Pending = () => {
   return (

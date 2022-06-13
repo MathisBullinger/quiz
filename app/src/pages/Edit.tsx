@@ -260,11 +260,7 @@ const Main: FC<QueryResult<'getQuizEdit'> & { quizKey: string }> = ({
                       ))}
                     </ol>
                   )}
-                  <Button
-                    className={styles.addAnswer}
-                    style="text"
-                    onClick={addAnswer(id)}
-                  >
+                  <Button style="text" onClick={addAnswer(id)}>
                     Add Answer
                   </Button>
                 </>

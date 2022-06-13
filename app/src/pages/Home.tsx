@@ -1,4 +1,4 @@
-import React from 'React'
+import React from 'react'
 import Button from 'components/Button'
 import * as styles from './Home.module.css'
 import { useAPI } from '../api'

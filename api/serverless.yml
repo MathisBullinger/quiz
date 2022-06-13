@@ -112,6 +112,9 @@ resources:
             KeyType: HASH
           - AttributeName: sk
             KeyType: RANGE
+        TimeToLiveSpecification:
+          AttributeName: tll
+          Enabled: true
         ProvisionedThroughput:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1

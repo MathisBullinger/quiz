@@ -53,6 +53,7 @@ export const connection = new DDB(
     sk: String,
     userId: String,
     quizzes: [String],
+    ttl: Number,
   },
   edit.client
 )
