@@ -1,6 +1,7 @@
 import type { APIGatewayProxyResult, APIGatewayEvent } from 'aws-lambda'
 import { pick } from 'froebel'
 import * as db from './db'
+import { respond } from './response'
 
 export const get = async (
   event: APIGatewayEvent
@@ -10,15 +11,5 @@ export const get = async (
   if (!quiz) return { statusCode: 404, body: '' }
   const data = pick(quiz, 'title', 'status')
 
-  return {
-    statusCode: 200,
-    body: JSON.stringify(data),
-    headers: {
-      'Access-Control-Allow-Credentials': true,
-      'Access-Control-Allow-Origin':
-        process.env.stage === 'dev'
-          ? 'http://localhost:1234'
-          : 'https://quiz.bullinger.dev',
-    },
-  }
+  return respond(200, { body: data })
 }

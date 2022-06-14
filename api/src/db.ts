@@ -11,7 +11,7 @@ export const edit = new DDB(
   },
   process.env.stage === 'dev'
     ? { region: 'localhost', endpoint: 'http://localhost:8000' }
-    : undefined
+    : { region: 'eu-west-1' }
 )
 
 export const question = new DDB(

@@ -1,9 +1,10 @@
-import type { APIGatewayProxyResult, APIGatewayEvent } from 'aws-lambda'
+import type { APIGatewayEvent } from 'aws-lambda'
 import { generate } from './util/key'
 import * as db from './db'
 import pick from 'froebel/pick'
+import { respond } from './response'
 
-export const create = async (): Promise<APIGatewayProxyResult> => {
+export const create = async () => {
   const key = generate(8)
   const quizId = generate(4)
 
@@ -21,7 +22,7 @@ export const create = async (): Promise<APIGatewayProxyResult> => {
       .ifNotExists(),
   ])
 
-  return { statusCode: 200, body: JSON.stringify({ key, quizId }) }
+  return respond(200, { body: { key, quizId } })
 }
 
 const mapQuestion = ({ sk, ...rest }: any) => ({
@@ -37,53 +38,46 @@ const mapQuestion = ({ sk, ...rest }: any) => ({
   id: sk.replace(/^question#/, ''),
 })
 
-export const getQuizEdit = async (
-  event: APIGatewayEvent
-): Promise<APIGatewayProxyResult> => {
+export const getQuizEdit = async (event: APIGatewayEvent) => {
   const results = await db.question.query(event.pathParameters!.key!)
 
   const mainItem: any = results.items.find(({ sk }) => sk.startsWith('id#'))
-  if (!mainItem) return { statusCode: 404, body: '' }
+  if (!mainItem) return respond(404, { body: '' })
 
   const questions = results.items
     .filter(({ sk }) => sk.startsWith('question#'))
     .map(mapQuestion)
 
-  return {
-    statusCode: 200,
-    body: JSON.stringify({
+  return respond(200, {
+    body: {
       quizId: mainItem.sk.replace(/^id#/, ''),
       title: mainItem.title,
       questions,
-    }),
-  }
+    },
+  })
 }
 
-export const editMeta = async (
-  event: APIGatewayEvent
-): Promise<APIGatewayProxyResult> => {
+export const editMeta = async (event: APIGatewayEvent) => {
   try {
     const { key, id, meta } = JSON.parse(event.body!)
-    if (!key || !id) return { statusCode: 500, body: 'must provide key and id' }
+    if (!key || !id) return respond(500, { body: 'must provide key and id' })
 
     await Promise.all([
       db.edit.update([key, `id#${id}`], { title: meta.title }).ifExists(),
       db.quiz.update([id, 'status'], { title: meta.title }).ifExists(),
     ])
 
-    return { statusCode: 200, body: '' }
+    return respond(200)
   } catch (err) {
     console.error(err)
-    return { statusCode: 500, body: '' }
+    return respond(500)
   }
 }
 
-export const addQuestion = async (
-  event: APIGatewayEvent
-): Promise<APIGatewayProxyResult> => {
+export const addQuestion = async (event: APIGatewayEvent) => {
   try {
     const { key, id } = JSON.parse(event.body!)
-    if (!key || !id) return { statusCode: 500, body: 'must provide key and id' }
+    if (!key || !id) return respond(500, { body: 'must provide key and id' })
 
     const questionId = generate(8)
 
@@ -103,20 +97,18 @@ export const addQuestion = async (
       db.question.put(question),
     ])
 
-    return { statusCode: 200, body: JSON.stringify(mapQuestion(question)) }
+    return respond(200, { body: mapQuestion(question) })
   } catch (err) {
     console.error(err)
-    return { statusCode: 500, body: '' }
+    return respond(500)
   }
 }
 
-export const editQuestion = async (
-  event: APIGatewayEvent
-): Promise<APIGatewayProxyResult> => {
+export const editQuestion = async (event: APIGatewayEvent) => {
   try {
     const { key, questionId, data } = JSON.parse(event.body!)
     if (!key || !questionId)
-      return { statusCode: 500, body: 'must provide key and question id' }
+      return respond(500, { body: 'must provide key and question id' })
 
     await db.question
       .update(
@@ -132,69 +124,57 @@ export const editQuestion = async (
       )
       .ifExists()
 
-    return { statusCode: 200, body: '' }
+    return respond(200)
   } catch (err) {
     console.error(err)
-    return { statusCode: 500, body: '' }
+    return respond(500)
   }
 }
 
-export const addAnswer = async (
-  event: APIGatewayEvent
-): Promise<APIGatewayProxyResult> => {
+export const addAnswer = async (event: APIGatewayEvent) => {
   try {
     const { key, questionId } = JSON.parse(event.body!)
     if (!key || !questionId)
-      return { statusCode: 500, body: 'must provide key and question id' }
+      return respond(500, { body: 'must provide key and question id' })
 
     const answer = { id: generate(8), text: '' }
     await db.question
       .update([key, `question#${questionId}`])
       .push({ options: [answer] })
 
-    return { statusCode: 200, body: JSON.stringify(answer) }
+    return respond(200, { body: answer })
   } catch (err) {
     console.error(err)
-    return { statusCode: 500, body: '' }
+    return respond(500)
   }
 }
 
-export const editAnswer = async (
-  event: APIGatewayEvent
-): Promise<APIGatewayProxyResult> => {
+export const editAnswer = async (event: APIGatewayEvent) => {
   try {
     const { key, questionId, answerId, text } = JSON.parse(event.body!)
     if (!key || !questionId || !answerId || !text)
-      return {
-        statusCode: 500,
-        body: 'must provide key, question and asnwer id',
-      }
+      return respond(500, { body: 'must provide key, question and asnwer id' })
 
     const question = await db.question.get(key, `question#${questionId}`)
     const answerIndex = question?.options.findIndex(({ id }) => id === answerId)
-    if (answerIndex < 0) return { statusCode: 404, body: '' }
+    if (answerIndex < 0) return respond(404, { body: '' })
 
     await db.question.update([key, `question#${questionId}`], {
       [`options[${answerIndex}].text`]: text,
     } as any)
 
-    return { statusCode: 200, body: '' }
+    return respond(200)
   } catch (err) {
     console.error(err)
-    return { statusCode: 500, body: '' }
+    return respond(500)
   }
 }
 
-export const deleteAnswer = async (
-  event: APIGatewayEvent
-): Promise<APIGatewayProxyResult> => {
+export const deleteAnswer = async (event: APIGatewayEvent) => {
   try {
     const { key, questionId, answerId } = JSON.parse(event.body!)
     if (!key || !questionId || !answerId)
-      return {
-        statusCode: 500,
-        body: 'must provide key, question and asnwer id',
-      }
+      return respond(500, { body: 'must provide key, question and asnwer id' })
 
     const question = await db.question.get(key, `question#${questionId}`)
     const answerIndex = question?.options.findIndex(({ id }) => id === answerId)
@@ -204,9 +184,9 @@ export const deleteAnswer = async (
         .update([key, `question#${questionId}`])
         .remove(`options[${answerIndex}]`)
 
-    return { statusCode: 200, body: '' }
+    return respond(200)
   } catch (err) {
     console.error(err)
-    return { statusCode: 500, body: '' }
+    return respond(500)
   }
 }

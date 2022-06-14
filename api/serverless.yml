@@ -4,10 +4,18 @@ provider:
   name: aws
   stage: ${opt:stage, 'dev'}
   region: eu-west-1
+  timeout: 20
+  memorySize: 256
   environment:
     stage: ${opt:stage, self:provider.stage, 'dev'}
     JWT_PUBLIC: ${ssm:/quiz/jwt/public}
     JWT_SECRET: ${ssm:/quiz/jwt/secret}
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:*
+      Resource:
+        - ${ssm:/quiz/db/arn}
 
 functions:
   quizCreate:
@@ -16,48 +24,56 @@ functions:
       - http:
           path: /quiz/create
           method: POST
+          cors: true
   quizGetEdit:
     handler: src/edit.getQuizEdit
     events:
       - http:
           path: /quiz/edit/{key}
           method: GET
+          cors: true
   quizEditMeta:
     handler: src/edit.editMeta
     events:
       - http:
           path: /quiz/edit
           method: PATCH
+          cors: true
   addQuestion:
     handler: src/edit.addQuestion
     events:
       - http:
           path: /quiz/question/add
           method: POST
+          cors: true
   editQuestion:
     handler: src/edit.editQuestion
     events:
       - http:
           path: /quiz/question/edit
           method: PATCH
+          cors: true
   addAnswer:
     handler: src/edit.addAnswer
     events:
       - http:
           path: /quiz/answer/add
           method: POST
+          cors: true
   editAnswer:
     handler: src/edit.editAnswer
     events:
       - http:
           path: /quiz/answer/edit
           method: PATCH
+          cors: true
   deleteAnswer:
     handler: src/edit.deleteAnswer
     events:
       - http:
           path: /quiz/answer/delete
           method: DELETE
+          cors: true
 
   getQuiz:
     handler: src/quiz.get
@@ -81,8 +97,14 @@ plugins:
   - serverless-webpack
   - serverless-offline
   - serverless-dynamodb-local
+  - serverless-domain-manager
 
 custom:
+  customDomain:
+    domainName: quiz-api.bullinger.dev
+    basePath: ''
+    stage: ${self:provider.stage}
+    createRoute53Record: true
   serverless-offline:
     httpPort: 5000
     noPrependStageInUrl: true
