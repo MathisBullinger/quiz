@@ -69,9 +69,3 @@
   color: var(--cl-background);
   border-color: var(--cl-background);
 }
-
-.countdown {
-  position: fixed;
-  left: 2rem;
-  bottom: 2rem;
-}

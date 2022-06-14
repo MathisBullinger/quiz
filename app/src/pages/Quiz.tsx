@@ -2,6 +2,7 @@ import React, { FC, useEffect, useRef, useState } from 'react'
 import { RouteProps } from 'itinero'
 import * as styles from './Quiz.module.css'
 import * as ws from '../ws'
+import Countdown from '../components/Countdown'
 
 const Quiz: FC<RouteProps<{}, { id: string }>> = ({ match }) => {
   const quiz = ws.useSubscribe('quizStatus')
@@ -82,7 +83,7 @@ const Main: FC<ws.QuizInfoPlayer> = ({
           auth={player.auth}
         />
       )}
-      {!!question?.closes && <CountDown closes={question.closes} />}
+      {!!question?.closes && <Countdown closes={question.closes} />}
       {status === 'done' && <Done />}
     </div>
   )
@@ -155,25 +156,6 @@ const MultipleChoice: FC<{
       ))}
     </ul>
   )
-}
-
-const CountDown: FC<{ closes: number }> = ({ closes }) => {
-  const [sec, setSec] = useState(Math.round((closes - Date.now()) / 1000))
-
-  useEffect(() => {
-    const update = () => {
-      const updated = (closes - Date.now()) / 1000
-      if (updated <= 0) {
-        setSec(0)
-        return
-      }
-      setSec(Math.round(updated))
-      setTimeout(update, (updated % 1000) + 50)
-    }
-    update()
-  }, [closes, setSec])
-
-  return <span className={styles.countdown}>{sec}</span>
 }
 
 const Done = () => {
