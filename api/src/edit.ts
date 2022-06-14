@@ -3,6 +3,7 @@ import { generate } from './util/key'
 import * as db from './db'
 import pick from 'froebel/pick'
 import { respond } from './response'
+import * as md from './util/markdown'
 
 export const create = async () => {
   const key = generate(8)
@@ -106,23 +107,23 @@ export const addQuestion = async (event: APIGatewayEvent) => {
 
 export const editQuestion = async (event: APIGatewayEvent) => {
   try {
-    const { key, questionId, data } = JSON.parse(event.body!)
+    const { key, questionId, data: rawData } = JSON.parse(event.body!)
     if (!key || !questionId)
       return respond(500, { body: 'must provide key and question id' })
 
-    await db.question
-      .update(
-        [key, `question#${questionId}`],
-        pick(
-          data,
-          'question',
-          'showPreview',
-          'previewDuration',
-          'previewText',
-          'answerType'
-        ) as any
-      )
-      .ifExists()
+    const data = pick(
+      rawData,
+      'question',
+      'showPreview',
+      'previewDuration',
+      'previewText',
+      'answerType'
+    ) as any
+
+    if (data.previewText) data.previewText = md.convert(data.previewText)
+    if (data.questionText) data.questionText = md.convert(data.questionText)
+
+    await db.question.update([key, `question#${questionId}`], data).ifExists()
 
     return respond(200)
   } catch (err) {

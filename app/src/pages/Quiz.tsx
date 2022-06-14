@@ -33,6 +33,7 @@ const Main: FC<ws.QuizInfoPlayer> = ({
   status,
   player,
   peers,
+  question,
 }) => {
   const [ownName, setOwnName] = useState(player.name)
 
@@ -68,6 +69,12 @@ const Main: FC<ws.QuizInfoPlayer> = ({
         ))}
       </ul>
       {status === 'pending' && <Pending />}
+      {status.startsWith('preview@') && (
+        <Preview html={question?.previewText} />
+      )}
+      {status.startsWith('question@') && (
+        <Question question={question?.question} />
+      )}
       {status === 'done' && <Done />}
     </div>
   )
@@ -81,8 +88,13 @@ const Pending = () => {
   )
 }
 
-const Preview = () => {
-  return <span>Preview</span>
+const Preview: FC<{ html?: string }> = ({ html }) => {
+  if (!html) return null
+  return <div dangerouslySetInnerHTML={{ __html: html }} />
+}
+
+const Question: FC<{ question: React.ReactNode }> = () => {
+  return <div>question</div>
 }
 
 const Done = () => {

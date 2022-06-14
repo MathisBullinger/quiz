@@ -3,11 +3,10 @@ import * as db from './db'
 import * as auth from './util/auth'
 import { generate } from './util/key'
 import { ApiGatewayManagementApi, DynamoDB } from 'aws-sdk'
-import pick from 'froebel/pick'
 import { DBRecord } from 'ddbjs'
 import { isRejected } from 'froebel/settled'
 import omit from 'froebel/omit'
-import { partition } from 'froebel'
+import { partition, pick } from 'froebel'
 
 const gateway = new ApiGatewayManagementApi({
   endpoint:
@@ -105,13 +104,28 @@ const sendQuizInfoToPlayer = async (
   )
   const peers = peersRaw.map(v => omit(v, 'connectionId', 'auth'))
   if (!player) return console.warn(`couldn't find player`)
+  const question = data.status?.includes('@')
+    ? await fetchQuestion(key!, data.status)
+    : undefined
   await wsPost(player.connectionId, {
     type: 'quizStatus',
     ...data,
+    question,
     quizId,
     player,
     peers,
   })
+}
+
+const fetchQuestion = async (key: string, stage: string) => {
+  if (!stage.includes('@')) return
+  const question = await db.question.get(
+    key,
+    `question#${stage.split('@').pop()}`
+  )
+  if (!question) return
+  if (stage.startsWith('preview')) return pick(question, 'id', 'previewText')
+  return pick(question, 'id', 'question', 'answerType')
 }
 
 const handlers: Record<

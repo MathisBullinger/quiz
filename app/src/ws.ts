@@ -59,6 +59,12 @@ export type QuizInfo = {
   title: string
   players: Player[]
   status: string
+  question?: {
+    id: string
+    previewText?: string
+    question?: string
+    answerType?: 'free-text' | 'multiple-choice'
+  }
 }
 
 export type QuizInfoPlayer = Omit<QuizInfo, 'players'> & {
