@@ -10,6 +10,7 @@ import { useComputed } from '../hooks'
 const Quiz: FC<RouteProps<{}, { id: string }>> = ({ match }) => {
   const [loading, result, error] = useAPICall('getQuiz', match.id)
   const context = useAppContext()
+  const user = ws.useSubscribe('user')
 
   useEffect(() => {
     if (error instanceof APIError && error.status === 404) {
@@ -18,40 +19,58 @@ const Quiz: FC<RouteProps<{}, { id: string }>> = ({ match }) => {
     }
   }, [error])
 
-  if (loading || error) return null
-  return <Main quizId={match.id} {...result} />
+  useEffect(() => {
+    const existing = localStorage.getItem(match.id)
+    if (existing) {
+      const { auth } = JSON.parse(existing)
+      ws.send({ type: 'restore', auth, quizId: match.id })
+    } else ws.send({ type: 'join', quizId: match.id })
+  }, [match.id])
+
+  useEffect(() => {
+    if (!user) return
+    localStorage.setItem(match.id, JSON.stringify(user))
+  }, [match.id, user])
+
+  if (loading || error || !user) return null
+  return <Main quizId={match.id} {...result} user={user} />
 }
 
 export default Quiz
 
-const Main: FC<QuizMeta & { quizId: string }> = ({ quizId, title, status }) => {
-  const user = ws.useSubscribe('user')
+const Main: FC<QuizMeta & { quizId: string; user: ws.Player }> = ({
+  quizId,
+  title,
+  status,
+  user,
+}) => {
   const { peers } = ws.useSubscribe('peers') ?? {}
-  const players = useComputed(
-    (a, b) => [...(a ? [a] : []), ...(b ?? [])],
-    user,
-    peers
-  )
+  const [ownName, setOwnName] = useState(user.name)
 
-  useEffect(() => {
-    const existing = localStorage.getItem(quizId)
-    if (existing) {
-      const { auth } = JSON.parse(existing)
-      ws.send({ type: 'restore', auth, quizId })
-    } else ws.send({ type: 'join', quizId })
-  }, [quizId])
-
-  useEffect(() => {
-    if (!user) return
-    localStorage.setItem(quizId, JSON.stringify(user))
-  }, [quizId, user])
+  const changeName = () => {
+    ws.send({ type: 'setName', quizId, name: ownName })
+  }
 
   return (
     <div className={styles.root}>
       <h1>{title}</h1>
-      <ul>
-        {players.map(({ id, name }) => (
-          <li key={id}>{name}</li>
+      <ul className={styles.playerList}>
+        {[user, ...(peers ?? [])].map(({ id, name }) => (
+          <li key={id}>
+            {id !== user.id ? (
+              name
+            ) : (
+              <>
+                <input
+                  value={ownName}
+                  onChange={({ target }) => setOwnName(target.value)}
+                />
+                <button disabled={name === ownName} onClick={changeName}>
+                  save
+                </button>
+              </>
+            )}
+          </li>
         ))}
       </ul>
       {status === 'pending' && <Pending />}

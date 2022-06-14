@@ -4,3 +4,11 @@
   margin: auto;
   padding: 2rem;
 }
+
+.playerList {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  padding: 0;
+  list-style: none;
+}

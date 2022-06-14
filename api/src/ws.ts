@@ -161,6 +161,16 @@ const handlers: Record<
 
     await respondInit(connectionId, player, peers)
   },
+  setName: async ({ quizId, name }, conId) => {
+    const data = await db.quiz.get(quizId, 'status')
+    const playerIndex = data?.players?.findIndex(
+      ({ connectionId }) => connectionId === conId
+    )
+    if (playerIndex < 0) return
+    await db.quiz.update([quizId, 'status'], {
+      [`players[${playerIndex}].name`]: name,
+    })
+  },
   host: async ({ quizKey, quizId }, connectionId) => {
     if (!quizKey || !quizId) throw Error('must provide quiz key & id')
 

@@ -52,7 +52,7 @@ export const useSubscribe = <T extends keyof EventMap>(type: T) => {
   return data
 }
 
-type Player = { id: string; name: string; auth?: string }
+export type Player = { id: string; name: string; auth?: string }
 export type QuizInfo = {
   quizId: string
   quizKey: string
