@@ -2,6 +2,7 @@ import React, { FC, useEffect } from 'react'
 import { RouteProps } from 'itinero'
 import * as styles from './Host.module.css'
 import * as ws from '../ws'
+import Button from 'components/Button'
 
 const Host: FC<RouteProps<{}, { key: string; id: string }>> = ({ match }) => {
   const data = ws.useSubscribe('quizInfo')
@@ -16,7 +17,11 @@ const Host: FC<RouteProps<{}, { key: string; id: string }>> = ({ match }) => {
 
 export default Host
 
-const Main: FC<ws.QuizInfo> = ({ title, players }) => {
+const Main: FC<ws.QuizInfo> = ({ title, players, status, id, key }) => {
+  const openQuiz = () => {
+    ws.send({ type: 'openQuiz', quizKey: key, quizId: id })
+  }
+
   return (
     <div className={styles.host}>
       <h1>Hosting {title}</h1>
@@ -25,6 +30,7 @@ const Main: FC<ws.QuizInfo> = ({ title, players }) => {
           <li key={id}>{name}</li>
         ))}
       </ul>
+      {status === 'pending' && <Button onClick={openQuiz}>start</Button>}
     </div>
   )
 }

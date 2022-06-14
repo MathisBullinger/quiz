@@ -10,6 +10,7 @@ provider:
     stage: ${opt:stage, self:provider.stage, 'dev'}
     JWT_PUBLIC: ${ssm:/quiz/jwt/public}
     JWT_SECRET: ${ssm:/quiz/jwt/secret}
+    WS_ENDPOINT: ${ssm:/quiz/ws/endpoint}
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -111,6 +112,19 @@ functions:
       - websocket:
           route: $default
 
+  wsPush:
+    handler: src/ws.dbPush
+    events:
+      - stream:
+          type: dynamodb
+          batchSize: 1
+          startingPosition: LATEST
+          maximumRetryAttempts: 3
+          arn: ${ssm:/quiz/db/stream/arn}
+          filterPatterns:
+            - eventName: [MODIFY]
+            - sk: [status]
+
 plugins:
   - serverless-webpack
   - serverless-offline
@@ -135,6 +149,12 @@ custom:
       port: 8000
       inMemory: true
       migrate: true
+  serverless-offline-dynamodb-streams:
+    apiVersion: '2013-12-02'
+    endpoint: http://0.0.0.0:8000
+    region: eu-west-1
+    skipCacheInvalidation: false
+    readInterval: 500
 
 resources:
   Resources:
@@ -155,6 +175,8 @@ resources:
         TimeToLiveSpecification:
           AttributeName: tll
           Enabled: true
+        StreamSpecification:
+          StreamViewType: NEW_IMAGE
         ProvisionedThroughput:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1

@@ -1,12 +1,18 @@
-import type { APIGatewayEvent } from 'aws-lambda'
+import type { APIGatewayEvent, DynamoDBStreamEvent } from 'aws-lambda'
 import * as db from './db'
 import * as auth from './util/auth'
 import { generate } from './util/key'
-import { ApiGatewayManagementApi } from 'aws-sdk'
+import { ApiGatewayManagementApi, DynamoDB } from 'aws-sdk'
 import pick from 'froebel/pick'
 import { DBRecord } from 'ddbjs'
+import { isRejected } from 'froebel/settled'
 
-let gateway: ApiGatewayManagementApi
+const gateway = new ApiGatewayManagementApi({
+  endpoint:
+    process.env.stage === 'dev'
+      ? 'http://localhost:3001'
+      : process.env.WS_ENDPOINT,
+})
 
 const wsPost = async (ConnectionId: string, data: Record<string, unknown>) =>
   await gateway
@@ -14,14 +20,6 @@ const wsPost = async (ConnectionId: string, data: Record<string, unknown>) =>
     .promise()
 
 export const handler = async (event: APIGatewayEvent) => {
-  if (!gateway)
-    gateway = new ApiGatewayManagementApi({
-      endpoint:
-        process.env.stage === 'dev'
-          ? 'http://localhost:3001'
-          : `${event.requestContext.domainName}/${event.requestContext.stage}`,
-    })
-
   if (event.requestContext.routeKey === '$connect') {
     return { statusCode: 200 }
   }
@@ -59,6 +57,24 @@ export const handler = async (event: APIGatewayEvent) => {
     console.error(err)
     return { statusCode: 500 }
   }
+}
+
+export const dbPush = async (event: DynamoDBStreamEvent) => {
+  const data = DynamoDB.Converter.unmarshall(
+    event.Records[0].dynamodb?.NewImage!
+  )
+  if (data.sk !== 'status') return
+  await updateHost(data)
+}
+
+const updateHost = async (data: any) => {
+  console.log('updateHost', data)
+  const hostData = await db.host.get(data.key, 'host')
+  console.log('push host', hostData)
+  const results = await Promise.allSettled(
+    hostData?.hosts?.map(id => sendQuizInfo(id, data))
+  )
+  results.filter(isRejected).forEach(res => console.log('failed to push', res))
 }
 
 const handlers: Record<
