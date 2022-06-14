@@ -68,13 +68,35 @@ export const dbPush = async (event: DynamoDBStreamEvent) => {
 }
 
 const updateHost = async (data: any) => {
-  console.log('updateHost', data)
   const hostData = await db.host.get(data.key, 'host')
-  console.log('push host', hostData)
   const results = await Promise.allSettled(
-    hostData?.hosts?.map(id => sendQuizInfo(id, data))
+    hostData?.hosts?.map(id => sendQuizInfoToHost(id, data))
   )
   results.filter(isRejected).forEach(res => console.log('failed to push', res))
+}
+
+const updatePlayers = async (data: any) => {
+  const results = await Promise.allSettled(
+    data.players?.map(({ connectionId }: any) =>
+      sendQuizInfoToPlayer(connectionId, data)
+    )
+  )
+  results.filter(isRejected).forEach(res => console.log('failed to push', res))
+}
+
+const sendQuizInfoToHost = async (
+  host: string,
+  { pk: quizId, key: quizKey, sk, ...data }: DBRecord<typeof db['quiz']>
+) => {
+  await wsPost(host, { type: 'quizInfo', ...data, quizId, quizKey })
+}
+
+const sendQuizInfoToPlayer = async (
+  player: string,
+  { pk: quizId, key, sk, ...data }: DBRecord<typeof db['quiz']>
+) => {
+  for (const player of data.players ?? []) delete player.connectionId
+  await wsPost(player, { type: 'quizStatus', ...data, quizId })
 }
 
 const handlers: Record<
@@ -150,7 +172,47 @@ const handlers: Record<
         .add({ hosts: [quizKey] }),
     ])
 
-    await sendQuizInfo(connectionId, quizInfo)
+    await sendQuizInfoToHost(connectionId, quizInfo)
+  },
+  nextStage: async ({ quizKey, quizId }) => {
+    const [status, data] = await Promise.all([
+      db.quiz.get(quizId, 'status'),
+      db.edit.get(quizKey, `id#${quizId}`),
+    ])
+
+    if (status.status === 'done') return
+
+    let advanceQuestion =
+      status.status === 'pending' || status.status.startsWith(`answer@`)
+
+    const currentQuestionIndex =
+      status.status === 'pending'
+        ? -1
+        : data.questions.indexOf(status.status.split('@').pop())
+
+    let nextStatus: string
+
+    if (advanceQuestion) {
+      nextStatus =
+        currentQuestionIndex + 1 >= data.questions.length
+          ? 'done'
+          : data.questions[currentQuestionIndex + 1]
+
+      if (nextStatus !== 'done') {
+        const question = await db.question.get(
+          quizKey,
+          `question#${nextStatus}`
+        )
+        console.log('advance to question', question)
+        nextStatus = question.showPreview
+          ? `preview@${nextStatus}`
+          : `answer@${nextStatus}`
+      }
+    } else {
+      nextStatus = `answer@${status.status.split('@').pop()}`
+    }
+
+    await db.quiz.update([quizId, 'status'], { status: nextStatus })
   },
 }
 
@@ -167,13 +229,6 @@ const respondInit = async (connectionId: string, player: any, peers: any[]) => {
         peers,
       }),
   ])
-}
-
-const sendQuizInfo = async (
-  host: string,
-  { pk: id, sk, ...data }: DBRecord<typeof db['quiz']>
-) => {
-  await wsPost(host, { type: 'quizInfo', ...data, id })
 }
 
 const filterPlayerPublic = (data: any) => pick(data, 'id', 'name')

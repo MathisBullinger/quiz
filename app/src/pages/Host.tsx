@@ -17,9 +17,9 @@ const Host: FC<RouteProps<{}, { key: string; id: string }>> = ({ match }) => {
 
 export default Host
 
-const Main: FC<ws.QuizInfo> = ({ title, players, status, id, key }) => {
-  const openQuiz = () => {
-    ws.send({ type: 'openQuiz', quizKey: key, quizId: id })
+const Main: FC<ws.QuizInfo> = ({ title, players, status, quizId, quizKey }) => {
+  const nextStage = () => {
+    ws.send({ type: 'nextStage', quizKey, quizId })
   }
 
   return (
@@ -30,7 +30,8 @@ const Main: FC<ws.QuizInfo> = ({ title, players, status, id, key }) => {
           <li key={id}>{name}</li>
         ))}
       </ul>
-      {status === 'pending' && <Button onClick={openQuiz}>start</Button>}
+      <p>stage: {status}</p>
+      <Button onClick={nextStage}>advance stage</Button>
     </div>
   )
 }

@@ -54,11 +54,11 @@ export const useSubscribe = <T extends keyof EventMap>(type: T) => {
 
 type Player = { id: string; name: string; auth?: string }
 export type QuizInfo = {
-  id: string
+  quizId: string
+  quizKey: string
   title: string
   players: Player[]
-  status: 'pending'
-  key: string
+  status: string
 }
 
 type EventMap = {
