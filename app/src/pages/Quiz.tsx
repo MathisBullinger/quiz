@@ -1,11 +1,10 @@
-import React, { FC, useEffect, useState } from 'react'
+import React, { FC, useEffect, useRef, useState } from 'react'
 import { RouteProps } from 'itinero'
 import * as styles from './Quiz.module.css'
 import * as ws from '../ws'
 
 const Quiz: FC<RouteProps<{}, { id: string }>> = ({ match }) => {
   const quiz = ws.useSubscribe('quizStatus')
-  console.log(quiz)
 
   useEffect(() => {
     const existing = localStorage.getItem(match.id)
@@ -36,6 +35,8 @@ const Main: FC<ws.QuizInfoPlayer> = ({
   question,
 }) => {
   const [ownName, setOwnName] = useState(player.name)
+
+  console.log(question)
 
   const changeName = () => {
     ws.send({
@@ -69,12 +70,19 @@ const Main: FC<ws.QuizInfoPlayer> = ({
         ))}
       </ul>
       {status === 'pending' && <Pending />}
-      {status.startsWith('preview@') && (
-        <Preview html={question?.previewText} />
-      )}
-      {status.startsWith('question@') && (
+      {!!question?.previewText && <Preview html={question.previewText} />}
+      {status.startsWith('answer@') && (
         <Question question={question?.question} />
       )}
+      {question?.answerType === 'multiple-choice' && (
+        <MultipleChoice
+          quizId={quizId}
+          questionId={question.id}
+          options={question.options}
+          auth={player.auth}
+        />
+      )}
+      {!!question?.closes && <CountDown closes={question.closes} />}
       {status === 'done' && <Done />}
     </div>
   )
@@ -93,8 +101,79 @@ const Preview: FC<{ html?: string }> = ({ html }) => {
   return <div dangerouslySetInnerHTML={{ __html: html }} />
 }
 
-const Question: FC<{ question: React.ReactNode }> = () => {
-  return <div>question</div>
+const Question: FC<{ question: string }> = ({ question }) => {
+  return (
+    <div
+      dangerouslySetInnerHTML={{ __html: question }}
+      className={styles.question}
+    />
+  )
+}
+
+const MultipleChoice: FC<{
+  quizId: string
+  questionId: string
+  auth: string
+  options?: { id: string; text: string }[]
+}> = ({ options, quizId, questionId, auth }) => {
+  const [selected, setSelected] = useState<string>()
+  const optionRef = useRef(options)
+  optionRef.current = options
+
+  useEffect(() => {
+    if (!selected) return
+    ws.send({ type: 'answer', quizId, questionId, auth, answer: selected })
+  }, [selected, quizId, questionId, auth, selected])
+
+  useEffect(() => {
+    const onKeyPress = (e: KeyboardEvent) => {
+      const select = e.key.toLowerCase().charCodeAt(0) - 97
+      if (select < optionRef.current.length)
+        setSelected(optionRef.current[select].id)
+    }
+
+    window.addEventListener('keypress', onKeyPress)
+    return () => {
+      window.removeEventListener('keypress', onKeyPress)
+    }
+  }, [setSelected])
+
+  if (!options?.length) return null
+  return (
+    <ul className={styles.multipleChoice}>
+      {options.map(({ id, text }) => (
+        <li
+          key={id}
+          onClick={() => setSelected(id)}
+          data-selected={id === selected}
+        >
+          <div
+            className={styles.option}
+            dangerouslySetInnerHTML={{ __html: text }}
+          />
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+const CountDown: FC<{ closes: number }> = ({ closes }) => {
+  const [sec, setSec] = useState(Math.round((closes - Date.now()) / 1000))
+
+  useEffect(() => {
+    const update = () => {
+      const updated = (closes - Date.now()) / 1000
+      if (updated <= 0) {
+        setSec(0)
+        return
+      }
+      setSec(Math.round(updated))
+      setTimeout(update, (updated % 1000) + 50)
+    }
+    update()
+  }, [closes, setSec])
+
+  return <span className={styles.countdown}>{sec}</span>
 }
 
 const Done = () => {

@@ -64,6 +64,8 @@ export type QuizInfo = {
     previewText?: string
     question?: string
     answerType?: 'free-text' | 'multiple-choice'
+    options?: { id: string; text: string }[]
+    closes?: number
   }
 }
 

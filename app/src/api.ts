@@ -10,6 +10,7 @@ export class APIError extends Error {
 export type Question = {
   id: string
   question: string
+  timeLimit: number
   showPreview: boolean
   previewDuration: number
   previewText?: string

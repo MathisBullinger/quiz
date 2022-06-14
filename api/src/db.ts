@@ -22,6 +22,8 @@ export const question = new DDB(
     sk: String,
     id: String,
     question: String,
+    timeLimit: Number,
+    closes: Number,
     showPreview: Boolean,
     previewDuration: Number,
     previewText: String,
@@ -41,6 +43,7 @@ export const quiz = new DDB(
     title: String,
     status: String,
     players: [],
+    questions: [],
   },
   edit.client
 )

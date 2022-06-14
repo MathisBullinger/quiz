@@ -17,7 +17,14 @@ const Host: FC<RouteProps<{}, { key: string; id: string }>> = ({ match }) => {
 
 export default Host
 
-const Main: FC<ws.QuizInfo> = ({ title, players, status, quizId, quizKey }) => {
+const Main: FC<ws.QuizInfo> = ({
+  title,
+  players,
+  status,
+  quizId,
+  quizKey,
+  question,
+}) => {
   const nextStage = () => {
     ws.send({ type: 'nextStage', quizKey, quizId })
   }
@@ -32,6 +39,12 @@ const Main: FC<ws.QuizInfo> = ({ title, players, status, quizId, quizKey }) => {
       </ul>
       <p>stage: {status}</p>
       <Button onClick={nextStage}>advance stage</Button>
+      {question?.previewText && (
+        <p>
+          Preview:{' '}
+          <div dangerouslySetInnerHTML={{ __html: question.previewText }} />
+        </p>
+      )}
     </div>
   )
 }

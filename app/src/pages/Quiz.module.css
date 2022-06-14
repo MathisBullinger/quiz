@@ -3,6 +3,9 @@
   max-width: 100vw;
   margin: auto;
   padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
 }
 
 .playerList {
@@ -11,4 +14,64 @@
   right: 1rem;
   padding: 0;
   list-style: none;
+}
+
+.question {
+  color: var(--cl-primary);
+  font-size: 1.2rem;
+  font-weight: 500;
+}
+
+.multipleChoice {
+  display: flex;
+  flex-direction: column;
+  list-style: none;
+  padding: 0;
+  gap: 1rem;
+  counter-reset: choice 0;
+}
+
+.multipleChoice li {
+  border: 1px solid var(--cl-text);
+  border-radius: 5px;
+  width: fit-content;
+  min-width: 12rem;
+  padding: 0.5rem 1rem;
+  padding-left: 0.5rem;
+  cursor: pointer;
+}
+
+.multipleChoice li:not([data-selected='true']):hover {
+  background-color: #fff4;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.option::before {
+  counter-increment: choice 1;
+  content: counter(choice, upper-alpha);
+  width: 1.5rem;
+  height: 1.5rem;
+  text-align: center;
+  line-height: 1.5rem;
+  border: 1px solid var(--cl-text);
+  border-radius: 2.5px;
+  font-size: 0.8rem;
+  background-color: var(--cl-background);
+}
+
+.multipleChoice li[data-selected='true'] .option::before {
+  background-color: var(--cl-primary);
+  color: var(--cl-background);
+  border-color: var(--cl-background);
+}
+
+.countdown {
+  position: fixed;
+  left: 2rem;
+  bottom: 2rem;
 }

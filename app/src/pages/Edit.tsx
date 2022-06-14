@@ -206,6 +206,17 @@ const Main: FC<QueryResult<'getQuizEdit'> & { quizKey: string }> = ({
                 label="Question"
               />
               <label>
+                Question time limit:{' '}
+                <Input
+                  type="number"
+                  value={data.timeLimit}
+                  onChange={editQuestion(id, 'timeLimit')}
+                  step={1}
+                  min={1}
+                  pattern={/^\d*$/}
+                />
+              </label>
+              <label>
                 Show preview text:
                 <CheckBox
                   checked={data.showPreview}

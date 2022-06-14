@@ -19,7 +19,14 @@ export const create = async () => {
       })
       .ifNotExists(),
     db.quiz
-      .put({ pk: quizId, sk: 'status', key, status: 'pending', players: [] })
+      .put({
+        pk: quizId,
+        sk: 'status',
+        key,
+        status: 'pending',
+        players: [],
+        questions: [],
+      })
       .ifNotExists(),
   ])
 
@@ -30,6 +37,7 @@ const mapQuestion = ({ sk, ...rest }: any) => ({
   ...pick(
     rest,
     'question',
+    'timeLimit',
     'showPreview',
     'previewDuration',
     'previewText',
@@ -86,6 +94,7 @@ export const addQuestion = async (event: APIGatewayEvent) => {
       pk: key,
       sk: `question#${questionId}`,
       question: '',
+      timeLimit: 60,
       showPreview: false,
       previewDuration: 30,
       previewText: '',
@@ -95,6 +104,7 @@ export const addQuestion = async (event: APIGatewayEvent) => {
 
     await Promise.all([
       db.edit.update([key, `id#${id}`]).push({ questions: [questionId] }),
+      db.question.update([id, 'status']).push({ questions: [questionId] }),
       db.question.put(question),
     ])
 
@@ -114,6 +124,7 @@ export const editQuestion = async (event: APIGatewayEvent) => {
     const data = pick(
       rawData,
       'question',
+      'timeLimit',
       'showPreview',
       'previewDuration',
       'previewText',

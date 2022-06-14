@@ -90,7 +90,10 @@ const sendQuizInfoToHost = async (
   host: string,
   { pk: quizId, key: quizKey, sk, ...data }: DBRecord<typeof db['quiz']>
 ) => {
-  await wsPost(host, { type: 'quizInfo', ...data, quizId, quizKey })
+  const question = data.status?.includes('@')
+    ? await fetchQuestion(quizKey!, data.status)
+    : undefined
+  await wsPost(host, { type: 'quizInfo', ...data, question, quizId, quizKey })
 }
 
 const sendQuizInfoToPlayer = async (
@@ -102,7 +105,7 @@ const sendQuizInfoToPlayer = async (
     ({ id, connectionId: conId }) =>
       playerId ? id === playerId : connectionId === conId
   )
-  const peers = peersRaw.map(v => omit(v, 'connectionId', 'auth'))
+  const peers = peersRaw.map(v => omit(v, 'connectionId', 'auth', 'answers'))
   if (!player) return console.warn(`couldn't find player`)
   const question = data.status?.includes('@')
     ? await fetchQuestion(key!, data.status)
@@ -125,7 +128,16 @@ const fetchQuestion = async (key: string, stage: string) => {
   )
   if (!question) return
   if (stage.startsWith('preview')) return pick(question, 'id', 'previewText')
-  return pick(question, 'id', 'question', 'answerType')
+  return pick(
+    question,
+    'id',
+    'previewText',
+    'question',
+    'answerType',
+    'options',
+    'timeLimit',
+    'closes'
+  )
 }
 
 const handlers: Record<
@@ -142,6 +154,7 @@ const handlers: Record<
       name: 'Unnamed Player',
       connectionId,
       auth: auth.createAuthToken(playerId),
+      answers: [],
     }
 
     const [quizData] = await Promise.all([
@@ -192,6 +205,7 @@ const handlers: Record<
         name: 'Unnamed Player',
         connectionId,
         auth: playerId,
+        answers: [],
       }
       quizData = (await db.quiz
         .update([quizId, 'status'])
@@ -209,6 +223,16 @@ const handlers: Record<
     if (playerIndex < 0) return
     await db.quiz.update([quizId, 'status'], {
       [`players[${playerIndex}].name`]: name,
+    })
+  },
+  answer: async ({ quizId, questionId, auth: authToken, answer }) => {
+    const playerId = auth.getUserId(authToken)
+    const data = await db.quiz.get(quizId, 'status')
+    const playerIndex = data?.players?.findIndex(({ id }) => id === playerId)
+    const questionIndex = data?.questions?.findIndex(id => id === questionId)
+    if (playerIndex < 0 || questionIndex < 0) return
+    await db.quiz.update([quizId, 'status'], {
+      [`players[${playerIndex}].answers[${questionIndex}]`]: answer,
     })
   },
   host: async ({ quizKey, quizId }, connectionId) => {
@@ -242,6 +266,7 @@ const handlers: Record<
 
     let nextStatus: string
 
+    let question: any = null
     if (advanceQuestion) {
       nextStatus =
         currentQuestionIndex + 1 >= data.questions.length
@@ -249,11 +274,7 @@ const handlers: Record<
           : data.questions[currentQuestionIndex + 1]
 
       if (nextStatus !== 'done') {
-        const question = await db.question.get(
-          quizKey,
-          `question#${nextStatus}`
-        )
-        console.log('advance to question', question)
+        question = await db.question.get(quizKey, `question#${nextStatus}`)
         nextStatus = question.showPreview
           ? `preview@${nextStatus}`
           : `answer@${nextStatus}`
@@ -262,7 +283,16 @@ const handlers: Record<
       nextStatus = `answer@${status.status.split('@').pop()}`
     }
 
-    await db.quiz.update([quizId, 'status'], { status: nextStatus })
+    const update: any = { status: nextStatus }
+    if (nextStatus.startsWith('answer@')) {
+      const questionId = `question#${nextStatus.split('@').pop()}`
+      question = question ?? (await db.question.get(quizKey, questionId))
+      if (question.timeLimit)
+        await db.question.update([quizKey, questionId], {
+          closes: Date.now() + 1000 * question.timeLimit,
+        })
+    }
+    await db.quiz.update([quizId, 'status'], update)
   },
 }
 
