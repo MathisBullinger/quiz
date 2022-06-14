@@ -61,8 +61,13 @@ export type QuizInfo = {
   status: string
 }
 
+export type QuizInfoPlayer = Omit<QuizInfo, 'players'> & {
+  player: Player
+  peers: Player[]
+}
+
 type EventMap = {
-  user: Player
   peers: { peers: Player[] }
   quizInfo: QuizInfo
+  quizStatus: QuizInfoPlayer
 }

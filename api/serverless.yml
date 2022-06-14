@@ -92,16 +92,6 @@ functions:
             origin: https://quiz.bullinger.dev
             allowCredentials: true
 
-  getQuiz:
-    handler: src/quiz.get
-    events:
-      - http:
-          path: /quiz/{id}
-          method: GET
-          cors:
-            origin: https://quiz.bullinger.dev
-            allowCredentials: true
-
   wsHandler:
     handler: src/ws.handler
     events:

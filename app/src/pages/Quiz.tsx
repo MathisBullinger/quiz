@@ -1,23 +1,11 @@
 import React, { FC, useEffect, useState } from 'react'
 import { RouteProps } from 'itinero'
 import * as styles from './Quiz.module.css'
-import { useAPICall, APIError, QuizMeta, Player } from '../api'
-import { useAppContext } from '../context'
-import { history } from 'itinero'
 import * as ws from '../ws'
-import { useComputed } from '../hooks'
 
 const Quiz: FC<RouteProps<{}, { id: string }>> = ({ match }) => {
-  const [loading, result, error] = useAPICall('getQuiz', match.id)
-  const context = useAppContext()
-  const user = ws.useSubscribe('user')
-
-  useEffect(() => {
-    if (error instanceof APIError && error.status === 404) {
-      context.pushError({ type: 'error', message: "This quiz doesn't exist" })
-      history.push('/')
-    }
-  }, [error])
+  const quiz = ws.useSubscribe('quizStatus')
+  console.log(quiz)
 
   useEffect(() => {
     const existing = localStorage.getItem(match.id)
@@ -27,37 +15,43 @@ const Quiz: FC<RouteProps<{}, { id: string }>> = ({ match }) => {
     } else ws.send({ type: 'join', quizId: match.id })
   }, [match.id])
 
+  const auth = quiz?.player?.auth
   useEffect(() => {
-    if (!user) return
-    localStorage.setItem(match.id, JSON.stringify(user))
-  }, [match.id, user])
+    if (!auth) return
+    localStorage.setItem(match.id, JSON.stringify(quiz.player))
+  }, [auth])
 
-  if (loading || error || !user) return null
-  return <Main quizId={match.id} {...result} user={user} />
+  if (!quiz) return null
+  return <Main {...quiz} />
 }
 
 export default Quiz
 
-const Main: FC<QuizMeta & { quizId: string; user: ws.Player }> = ({
+const Main: FC<ws.QuizInfoPlayer> = ({
   quizId,
   title,
   status,
-  user,
+  player,
+  peers,
 }) => {
-  const { peers } = ws.useSubscribe('peers') ?? {}
-  const [ownName, setOwnName] = useState(user.name)
+  const [ownName, setOwnName] = useState(player.name)
 
   const changeName = () => {
-    ws.send({ type: 'setName', quizId, name: ownName })
+    ws.send({
+      type: 'setName',
+      quizId,
+      name: ownName,
+      auth: player.auth,
+    })
   }
 
   return (
     <div className={styles.root}>
       <h1>{title}</h1>
       <ul className={styles.playerList}>
-        {[user, ...(peers ?? [])].map(({ id, name }) => (
+        {[player, ...(peers ?? [])].map(({ id, name }) => (
           <li key={id}>
-            {id !== user.id ? (
+            {id !== player.id ? (
               name
             ) : (
               <>
@@ -74,6 +68,7 @@ const Main: FC<QuizMeta & { quizId: string; user: ws.Player }> = ({
         ))}
       </ul>
       {status === 'pending' && <Pending />}
+      {status === 'done' && <Done />}
     </div>
   )
 }
@@ -84,4 +79,12 @@ const Pending = () => {
       <span>Waiting for the host to start the quiz.</span>
     </div>
   )
+}
+
+const Preview = () => {
+  return <span>Preview</span>
+}
+
+const Done = () => {
+  return <span>Done</span>
 }

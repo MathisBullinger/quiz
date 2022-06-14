@@ -6,6 +6,8 @@ import { ApiGatewayManagementApi, DynamoDB } from 'aws-sdk'
 import pick from 'froebel/pick'
 import { DBRecord } from 'ddbjs'
 import { isRejected } from 'froebel/settled'
+import omit from 'froebel/omit'
+import { partition } from 'froebel'
 
 const gateway = new ApiGatewayManagementApi({
   endpoint:
@@ -65,6 +67,7 @@ export const dbPush = async (event: DynamoDBStreamEvent) => {
   )
   if (data.sk !== 'status') return
   await updateHost(data)
+  await updatePlayers(data)
 }
 
 const updateHost = async (data: any) => {
@@ -78,7 +81,7 @@ const updateHost = async (data: any) => {
 const updatePlayers = async (data: any) => {
   const results = await Promise.allSettled(
     data.players?.map(({ connectionId }: any) =>
-      sendQuizInfoToPlayer(connectionId, data)
+      sendQuizInfoToPlayer({ connectionId }, data)
     )
   )
   results.filter(isRejected).forEach(res => console.log('failed to push', res))
@@ -92,11 +95,23 @@ const sendQuizInfoToHost = async (
 }
 
 const sendQuizInfoToPlayer = async (
-  player: string,
-  { pk: quizId, key, sk, ...data }: DBRecord<typeof db['quiz']>
+  { playerId, connectionId }: { playerId?: string; connectionId?: string },
+  { pk: quizId, key, sk, players, ...data }: DBRecord<typeof db['quiz']>
 ) => {
-  for (const player of data.players ?? []) delete player.connectionId
-  await wsPost(player, { type: 'quizStatus', ...data, quizId })
+  const [[player], peersRaw] = partition(
+    players ?? [],
+    ({ id, connectionId: conId }) =>
+      playerId ? id === playerId : connectionId === conId
+  )
+  const peers = peersRaw.map(v => omit(v, 'connectionId', 'auth'))
+  if (!player) return console.warn(`couldn't find player`)
+  await wsPost(player.connectionId, {
+    type: 'quizStatus',
+    ...data,
+    quizId,
+    player,
+    peers,
+  })
 }
 
 const handlers: Record<
@@ -107,10 +122,12 @@ const handlers: Record<
     if (!quizId || !connectionId)
       throw Error('must provide quizId and connectionId')
 
+    const playerId = generate(16)
     const player = {
-      id: generate(16),
+      id: playerId,
       name: 'Unnamed Player',
       connectionId,
+      auth: auth.createAuthToken(playerId),
     }
 
     const [quizData] = await Promise.all([
@@ -127,17 +144,14 @@ const handlers: Record<
         .add({ quizzes: [quizId] }),
     ])
 
-    const peers = quizData.players
-      ?.filter(({ id }) => id !== player.id)
-      .map(filterPlayerPublic)
-
-    await respondInit(connectionId, player, peers ?? [])
+    if (process.env.stage === 'dev')
+      await sendQuizInfoToPlayer({ connectionId }, quizData)
   },
   restore: async ({ quizId, auth: token }, connectionId) => {
     const userId = auth.getUserId(token)
     if (!quizId || !userId) throw Error('must provide quizId & auth')
 
-    const [quizData] = await Promise.all([
+    let [quizData] = await Promise.all([
       db.quiz.get(quizId, 'status'),
       db.connection
         .update([connectionId, 'connection'], {
@@ -148,24 +162,36 @@ const handlers: Record<
     ])
 
     let player = quizData.players.find(({ id }) => id === userId)
-    const peers = quizData.players.filter(v => v !== player)
 
-    if (!player) {
-      player = {
-        id: generate(16),
-        name: 'Unnamed Player',
-        connectionId,
-      }
-      await db.quiz.update([quizId, 'status']).push({ players: [player] })
+    if (player?.connectionId !== connectionId) {
+      await db.quiz.update([quizId, 'status'], {
+        [`players[${quizData.players.indexOf(player)}].connectionId`]:
+          connectionId,
+      })
+      player.connectionId = connectionId
     }
 
-    await respondInit(connectionId, player, peers)
+    if (!player) {
+      const playerId = generate(16)
+      player = {
+        id: playerId,
+        name: 'Unnamed Player',
+        connectionId,
+        auth: playerId,
+      }
+      quizData = (await db.quiz
+        .update([quizId, 'status'])
+        .push({ players: [player] })
+        .returning('NEW')) as any
+    }
+
+    if (process.env.stage === 'dev')
+      await sendQuizInfoToPlayer({ playerId: player.id }, quizData)
   },
-  setName: async ({ quizId, name }, conId) => {
+  setName: async ({ quizId, name, auth: authToken }) => {
+    const playerId = auth.getUserId(authToken)
     const data = await db.quiz.get(quizId, 'status')
-    const playerIndex = data?.players?.findIndex(
-      ({ connectionId }) => connectionId === conId
-    )
+    const playerIndex = data?.players?.findIndex(({ id }) => id === playerId)
     if (playerIndex < 0) return
     await db.quiz.update([quizId, 'status'], {
       [`players[${playerIndex}].name`]: name,
@@ -226,21 +252,5 @@ const handlers: Record<
   },
 }
 
-const respondInit = async (connectionId: string, player: any, peers: any[]) => {
-  await Promise.all([
-    wsPost(connectionId, {
-      type: 'user',
-      ...player,
-      auth: auth.createAuthToken(player.id),
-    }),
-    (peers?.length ?? 0) > 0 &&
-      wsPost(connectionId, {
-        type: 'peers',
-        peers,
-      }),
-  ])
-}
-
-const filterPlayerPublic = (data: any) => pick(data, 'id', 'name')
 const connectionTTL = () =>
   Math.round(new Date(Date.now() + 1000 * 60 * 60 * 24).getTime() / 1000)
