@@ -34,7 +34,7 @@ const Main: FC<QueryResult<'getQuizEdit'> & { quizKey: string }> = ({
   ...initial
 }) => {
   const linkParticipate = `${location.origin}/${quizId}`
-  const linkHost = `${location.origin}/host/${quizKey}`
+  const linkHost = `${location.origin}/host/${quizKey}/${quizId}`
   const [questions, setQuestions] = useState(initial.questions)
   const [questionDiff, setQuestionDiff] = useState<
     Record<

@@ -53,7 +53,19 @@ export const connection = new DDB(
     sk: String,
     userId: String,
     quizzes: [String],
+    hosts: [String],
     ttl: Number,
+  },
+  edit.client
+)
+
+export const host = new DDB(
+  'quiz',
+  {
+    [DDB.key]: ['pk', 'sk'],
+    pk: String,
+    sk: String,
+    hosts: [String],
   },
   edit.client
 )

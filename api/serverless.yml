@@ -101,7 +101,7 @@ functions:
             origin: https://quiz.bullinger.dev
             allowCredentials: true
 
-  connectHandler:
+  wsHandler:
     handler: src/ws.handler
     events:
       - websocket:

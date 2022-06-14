@@ -4,10 +4,9 @@ import * as auth from './util/auth'
 import { generate } from './util/key'
 import { ApiGatewayManagementApi } from 'aws-sdk'
 import pick from 'froebel/pick'
+import { DBRecord } from 'ddbjs'
 
-const gateway = new ApiGatewayManagementApi({
-  endpoint: 'http://localhost:3001',
-})
+let gateway: ApiGatewayManagementApi
 
 const wsPost = async (ConnectionId: string, data: Record<string, unknown>) =>
   await gateway
@@ -15,7 +14,13 @@ const wsPost = async (ConnectionId: string, data: Record<string, unknown>) =>
     .promise()
 
 export const handler = async (event: APIGatewayEvent) => {
-  console.log(event.requestContext.routeKey)
+  if (!gateway)
+    gateway = new ApiGatewayManagementApi({
+      endpoint:
+        process.env.stage === 'dev'
+          ? 'http://localhost:3001'
+          : `${event.requestContext.domainName}/${event.requestContext.stage}`,
+    })
 
   if (event.requestContext.routeKey === '$connect') {
     return { statusCode: 200 }
@@ -26,8 +31,8 @@ export const handler = async (event: APIGatewayEvent) => {
       'connectionId'
     )
     if (conInfo)
-      await Promise.all(
-        conInfo.quizzes.map(quizId =>
+      await Promise.all([
+        ...conInfo.quizzes.map(quizId =>
           db.quiz.get(quizId, 'status').then(quiz => {
             const playerIndex = quiz.players.find(
               ({ id }) => id === conInfo.userId
@@ -35,8 +40,13 @@ export const handler = async (event: APIGatewayEvent) => {
             if (playerIndex < 0) return
             db.quiz.update([quizId, 'status']).remove(`players[${playerIndex}]`)
           })
-        )
-      )
+        ),
+        ...conInfo.hosts.map(key =>
+          db.host
+            .update([key, 'host'])
+            .delete({ hosts: [event.requestContext.connectionId!] })
+        ),
+      ])
 
     return { statusCode: 200 }
   }
@@ -113,6 +123,19 @@ const handlers: Record<
 
     await respondInit(connectionId, player, peers)
   },
+  host: async ({ quizKey, quizId }, connectionId) => {
+    if (!quizKey || !quizId) throw Error('must provide quiz key & id')
+
+    const [quizInfo] = await Promise.all([
+      db.quiz.get(quizId, 'status'),
+      db.host.update([quizKey, 'host']).add({ hosts: [connectionId] }),
+      db.connection
+        .update([connectionId, 'connection'], { ttl: connectionTTL() })
+        .add({ hosts: [quizKey] }),
+    ])
+
+    await sendQuizInfo(connectionId, quizInfo)
+  },
 }
 
 const respondInit = async (connectionId: string, player: any, peers: any[]) => {
@@ -128,6 +151,13 @@ const respondInit = async (connectionId: string, player: any, peers: any[]) => {
         peers,
       }),
   ])
+}
+
+const sendQuizInfo = async (
+  host: string,
+  { pk: id, sk, ...data }: DBRecord<typeof db['quiz']>
+) => {
+  await wsPost(host, { type: 'quizInfo', ...data, id })
 }
 
 const filterPlayerPublic = (data: any) => pick(data, 'id', 'name')
