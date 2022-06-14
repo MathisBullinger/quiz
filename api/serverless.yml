@@ -24,56 +24,72 @@ functions:
       - http:
           path: /quiz/create
           method: POST
-          cors: true
+          cors:
+            origin: https://quiz.bullinger.dev
+            allowCredentials: true
   quizGetEdit:
     handler: src/edit.getQuizEdit
     events:
       - http:
           path: /quiz/edit/{key}
           method: GET
-          cors: true
+          cors:
+            origin: https://quiz.bullinger.dev
+            allowCredentials: true
   quizEditMeta:
     handler: src/edit.editMeta
     events:
       - http:
           path: /quiz/edit
           method: PATCH
-          cors: true
+          cors:
+            origin: https://quiz.bullinger.dev
+            allowCredentials: true
   addQuestion:
     handler: src/edit.addQuestion
     events:
       - http:
           path: /quiz/question/add
           method: POST
-          cors: true
+          cors:
+            origin: https://quiz.bullinger.dev
+            allowCredentials: true
   editQuestion:
     handler: src/edit.editQuestion
     events:
       - http:
           path: /quiz/question/edit
           method: PATCH
-          cors: true
+          cors:
+            origin: https://quiz.bullinger.dev
+            allowCredentials: true
   addAnswer:
     handler: src/edit.addAnswer
     events:
       - http:
           path: /quiz/answer/add
           method: POST
-          cors: true
+          cors:
+            origin: https://quiz.bullinger.dev
+            allowCredentials: true
   editAnswer:
     handler: src/edit.editAnswer
     events:
       - http:
           path: /quiz/answer/edit
           method: PATCH
-          cors: true
+          cors:
+            origin: https://quiz.bullinger.dev
+            allowCredentials: true
   deleteAnswer:
     handler: src/edit.deleteAnswer
     events:
       - http:
           path: /quiz/answer/delete
           method: DELETE
-          cors: true
+          cors:
+            origin: https://quiz.bullinger.dev
+            allowCredentials: true
 
   getQuiz:
     handler: src/quiz.get
@@ -81,7 +97,9 @@ functions:
       - http:
           path: /quiz/{id}
           method: GET
-          cors: true
+          cors:
+            origin: https://quiz.bullinger.dev
+            allowCredentials: true
 
   connectHandler:
     handler: src/ws.handler
