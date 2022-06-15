@@ -196,7 +196,6 @@ const Main: FC<QueryResult<'getQuizEdit'> & { quizKey: string }> = ({
             ...initial,
             ...omit(questionDiff[id] ?? {}, 'options'),
           }
-          console.log(data)
           const options = initial.options.map(({ id: answerId, text }) => ({
             id: answerId,
             text: questionDiff[id]?.options?.[answerId] ?? text,
@@ -255,6 +254,15 @@ const Main: FC<QueryResult<'getQuizEdit'> & { quizKey: string }> = ({
                   onSelect={editQuestion(id, 'answerType')}
                 />
               </label>
+              {data.answerType === 'free-text' && (
+                <label>
+                  Correct:{' '}
+                  <TextArea
+                    value={data.correctAnswer}
+                    onChange={editQuestion(id, 'correctAnswer')}
+                  />
+                </label>
+              )}
               {data.answerType === 'multiple-choice' && (
                 <>
                   {data.options.length > 0 && (

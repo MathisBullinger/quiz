@@ -134,7 +134,7 @@ export const editQuestion = async (event: APIGatewayEvent) => {
     ) as any
 
     if (data.previewText) data.previewText = md.convert(data.previewText)
-    if (data.questionText) data.questionText = md.convert(data.questionText)
+    if (data.question) data.question = md.convert(data.question)
 
     await db.question.update([key, `question#${questionId}`], data).ifExists()
 

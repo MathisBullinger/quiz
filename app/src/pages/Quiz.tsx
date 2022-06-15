@@ -3,6 +3,8 @@ import { RouteProps } from 'itinero'
 import * as styles from './Quiz.module.css'
 import * as ws from '../ws'
 import Countdown from '../components/Countdown'
+import TextArea from 'components/TextArea'
+import Button from 'components/Button'
 
 const Quiz: FC<RouteProps<{}, { id: string }>> = ({ match }) => {
   const quiz = ws.useSubscribe('quizStatus')
@@ -79,10 +81,13 @@ const Main: FC<ws.QuizInfoPlayer> = ({
         <MultipleChoice
           quizId={quizId}
           questionId={question.id}
-          options={question.options}
           auth={player.auth}
+          options={question.options}
           disabled={question?.closes && Date.now() >= question?.closes}
         />
+      )}
+      {question?.answerType === 'free-text' && (
+        <FreeText quizId={quizId} questionId={question.id} auth={player.auth} />
       )}
       {!!question?.correctAnswer && (
         <p>The correct answer is: {question.correctAnswer}</p>
@@ -162,6 +167,35 @@ const MultipleChoice: FC<{
         </li>
       ))}
     </ul>
+  )
+}
+
+const FreeText: FC<{
+  quizId: string
+  questionId: string
+  auth: string
+  disabled?: boolean
+}> = ({ disabled, quizId, questionId, auth }) => {
+  const [text, setText] = useState('')
+  const [submitted, setSubmitted] = useState('')
+
+  const onSubmit = () => {
+    if (disabled) return
+    setSubmitted(text)
+    ws.send({ type: 'answer', quizId, questionId, auth, answer: text })
+  }
+
+  return (
+    <div className={styles.freeAnswer}>
+      <TextArea
+        value={text}
+        onChange={disabled ? () => {} : setText}
+        label="Answer"
+      />
+      <Button disabled={disabled || text === submitted} onClick={onSubmit}>
+        Submit
+      </Button>
+    </div>
   )
 }
 

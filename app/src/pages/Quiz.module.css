@@ -73,3 +73,12 @@
   color: var(--cl-background);
   border-color: var(--cl-background);
 }
+
+.freeAnswer {
+  width: 100%;
+}
+
+.freeAnswer textarea {
+  width: 100%;
+  margin-bottom: 1rem;
+}

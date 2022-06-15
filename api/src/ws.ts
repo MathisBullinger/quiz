@@ -278,34 +278,42 @@ const handlers: Record<
         ? -1
         : data.questions.indexOf(currentQuestionId)
 
+    if (status.status.startsWith('answer')) {
+      const currentQuestion = await db.question.get(
+        quizKey,
+        `question#${currentQuestionId}`
+      )
+      console.log('rate answers', currentQuestionId)
+
+      await db.quiz.update([quizId, 'status']).push(
+        Object.fromEntries(
+          status.players.map(({ id, answers }, i) => {
+            let score = 0
+
+            if (currentQuestion.answerType === 'multiple-choice') {
+              if (
+                answers[currentQuestionIndex] === currentQuestion.correctAnswer
+              )
+                score = 1
+            } else {
+              if (
+                normalizeFreeText(answers[currentQuestionIndex]) ===
+                normalizeFreeText(currentQuestion.correctAnswer)
+              )
+                score = 1
+            }
+
+            console.log(`score player ${id}: ${score}`)
+            return [`players[${i}].scores`, [score]] as const
+          }) as any
+        )
+      )
+    }
+
     let nextStatus: string
 
     let question: any = null
     if (advanceQuestion) {
-      if (currentQuestionId) {
-        const currentQuestion = await db.question.get(
-          quizKey,
-          `question#${currentQuestionId}`
-        )
-        if (currentQuestion.answerType === 'multiple-choice') {
-          console.log('rate answers', currentQuestionId)
-
-          await db.quiz.update([quizId, 'status']).push(
-            Object.fromEntries(
-              status.players.map(({ id, answers }, i) => {
-                const score =
-                  answers[currentQuestionIndex] ===
-                  currentQuestion.correctAnswer
-                    ? 1
-                    : 0
-                console.log(`score player ${id}: ${score}`)
-                return [`players[${i}].scores`, [score]] as const
-              }) as any
-            )
-          )
-        }
-      }
-
       nextStatus =
         currentQuestionIndex + 1 >= data.questions.length
           ? 'done'
@@ -336,6 +344,22 @@ const handlers: Record<
     await db.quiz.update([quizId, 'status'], update)
   },
 }
+
+const normalizeFreeText = (input: string = '') =>
+  input
+    .replace(/\r\n/g, '\n')
+    .split(/\n/)
+    .filter(v => v.match(/[^\s]/))
+    .map(v => {
+      let line = v.replace(/^\s*/, '').replace(/\s*$/, '')
+      if (
+        (line.startsWith('"') && line.endsWith('"')) ||
+        (line.startsWith("'") && line.endsWith("'"))
+      )
+        line = line.slice(1, -1)
+      return line
+    })
+    .join('\n')
 
 const connectionTTL = () =>
   Math.round(new Date(Date.now() + 1000 * 60 * 60 * 24).getTime() / 1000)
