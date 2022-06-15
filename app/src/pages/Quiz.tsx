@@ -204,8 +204,6 @@ const Done: FC<{ people: ws.Player[] }> = ({ people }) => {
     []
   )
 
-  console.log(people, ranked)
-
   useEffect(() => {
     if (!people?.length) return setRanked([])
 
@@ -223,7 +221,16 @@ const Done: FC<{ people: ws.Player[] }> = ({ people }) => {
     <ol className={styles.scoreBoard}>
       {ranked.map(v => (
         <li>
-          {v.name}: {v.totalScore}
+          <details>
+            <summary>
+              {v.name}: {v.totalScore}
+            </summary>
+          </details>
+          <ol>
+            {v.answers.map((v, i) => (
+              <li key={i}>{v}</li>
+            ))}
+          </ol>
         </li>
       ))}
     </ol>
