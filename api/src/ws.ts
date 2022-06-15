@@ -311,8 +311,18 @@ const handlers: Record<
 
       await db.quiz.update([quizId, 'status']).push(
         Object.fromEntries(
-          status.players.map(({ id, answers }, i) => {
+          status.players.flatMap(({ id, answers }, i) => {
             let score = 0
+
+            let updates: any[] = []
+
+            if (answers.length <= currentQuestionIndex)
+              updates.push(
+                [
+                  `players[${i}].answers`,
+                  Array(currentQuestionIndex - answers.length + 1),
+                ].fill('')
+              )
 
             if (currentQuestion.answerType === 'multiple-choice') {
               if (
@@ -328,7 +338,8 @@ const handlers: Record<
             }
 
             console.log(`score player ${id}: ${score}`)
-            return [`players[${i}].scores`, [score]] as const
+            updates.push([`players[${i}].scores`, [score]])
+            return updates
           }) as any
         )
       )
