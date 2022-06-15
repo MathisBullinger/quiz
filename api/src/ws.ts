@@ -105,8 +105,32 @@ const sendQuizInfoToPlayer = async (
     ({ id, connectionId: conId }) =>
       playerId ? id === playerId : connectionId === conId
   )
-  const peers = peersRaw.map(v => omit(v, 'connectionId', 'auth', 'answers'))
+  const peers = peersRaw.map(v =>
+    omit(
+      v,
+      'connectionId',
+      'auth',
+      ...(data.status !== 'done' ? ['answers', 'scores'] : [])
+    )
+  )
   if (!player) return console.warn(`couldn't find player`)
+
+  if (data.status === 'done') {
+    const questions = await Promise.all(
+      (data.questions ?? []).map(id => db.question.get(key!, `question#${id}`))
+    )
+
+    for (const person of [player, ...peers].filter(Boolean)) {
+      for (let i = 0; i < person.answers ?? []; i++) {
+        if (questions[i].answerType === 'multiple-choice') {
+          person.answers[i] = questions[i].options.find(
+            ({ id }) => id === person.answers[i]
+          )
+        }
+      }
+    }
+  }
+
   const question = data.status?.includes('@')
     ? await fetchQuestion(key!, data.status)
     : undefined

@@ -9,6 +9,8 @@ import Button from 'components/Button'
 const Quiz: FC<RouteProps<{}, { id: string }>> = ({ match }) => {
   const quiz = ws.useSubscribe('quizStatus')
 
+  console.log(quiz)
+
   useEffect(() => {
     const existing = localStorage.getItem(match.id)
     if (existing) {
@@ -38,8 +40,6 @@ const Main: FC<ws.QuizInfoPlayer> = ({
   question,
 }) => {
   const [ownName, setOwnName] = useState(player.name)
-
-  console.log(question)
 
   const changeName = () => {
     ws.send({
@@ -93,7 +93,7 @@ const Main: FC<ws.QuizInfoPlayer> = ({
         <p>The correct answer is: {question.correctAnswer}</p>
       )}
       {!!question?.closes && <Countdown closes={question.closes} />}
-      {status === 'done' && <Done />}
+      {status === 'done' && <Done people={[player, ...peers]} />}
     </div>
   )
 }
@@ -199,6 +199,33 @@ const FreeText: FC<{
   )
 }
 
-const Done = () => {
-  return <span>Done</span>
+const Done: FC<{ people: ws.Player[] }> = ({ people }) => {
+  const [ranked, setRanked] = useState<(ws.Player & { totalScore: number })[]>(
+    []
+  )
+
+  console.log(people, ranked)
+
+  useEffect(() => {
+    if (!people?.length) return setRanked([])
+
+    setRanked(
+      people
+        .map(person => ({
+          ...person,
+          totalScore: person.scores.reduce((a, c) => a + c, 0),
+        }))
+        .sort((a, b) => b.totalScore - a.totalScore)
+    )
+  }, [people])
+
+  return (
+    <ol className={styles.scoreBoard}>
+      {ranked.map(v => (
+        <li>
+          {v.name}: {v.totalScore}
+        </li>
+      ))}
+    </ol>
+  )
 }
