@@ -121,11 +121,12 @@ const sendQuizInfoToPlayer = async (
     )
 
     for (const person of [player, ...peers].filter(Boolean)) {
-      for (let i = 0; i < person.answers ?? []; i++) {
+      for (let i = 0; i < person.answers?.length; i++) {
+        console.log(questions[i])
         if (questions[i].answerType === 'multiple-choice') {
           person.answers[i] = questions[i].options.find(
             ({ id }) => id === person.answers[i]
-          )
+          ).text
         }
       }
     }

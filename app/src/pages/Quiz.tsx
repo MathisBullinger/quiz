@@ -9,8 +9,6 @@ import Button from 'components/Button'
 const Quiz: FC<RouteProps<{}, { id: string }>> = ({ match }) => {
   const quiz = ws.useSubscribe('quizStatus')
 
-  console.log(quiz)
-
   useEffect(() => {
     const existing = localStorage.getItem(match.id)
     if (existing) {
@@ -225,12 +223,12 @@ const Done: FC<{ people: ws.Player[] }> = ({ people }) => {
             <summary>
               {v.name}: {v.totalScore}
             </summary>
+            <ol>
+              {v.answers.map((v, i) => (
+                <li key={i}>{v}</li>
+              ))}
+            </ol>
           </details>
-          <ol>
-            {v.answers.map((v, i) => (
-              <li key={i}>{v}</li>
-            ))}
-          </ol>
         </li>
       ))}
     </ol>
