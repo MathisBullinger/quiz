@@ -42,7 +42,8 @@ const mapQuestion = ({ sk, ...rest }: any) => ({
     'previewDuration',
     'previewText',
     'answerType',
-    'options'
+    'options',
+    'correctAnswer'
   ),
   id: sk.replace(/^question#/, ''),
 })
@@ -128,7 +129,8 @@ export const editQuestion = async (event: APIGatewayEvent) => {
       'showPreview',
       'previewDuration',
       'previewText',
-      'answerType'
+      'answerType',
+      'correctAnswer'
     ) as any
 
     if (data.previewText) data.previewText = md.convert(data.previewText)

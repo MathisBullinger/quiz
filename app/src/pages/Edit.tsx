@@ -39,7 +39,10 @@ const Main: FC<QueryResult<'getQuizEdit'> & { quizKey: string }> = ({
   const [questionDiff, setQuestionDiff] = useState<
     Record<
       string,
-      Partial<Omit<Question, 'options'>> & { options?: Record<string, string> }
+      Partial<Omit<Question, 'options'>> & {
+        options?: Record<string, string>
+        correct?: string
+      }
     >
   >(Object.fromEntries(questions.map(({ id }) => [id, {}])))
   const [title, setTitle] = useState(initial.title)
@@ -193,6 +196,7 @@ const Main: FC<QueryResult<'getQuizEdit'> & { quizKey: string }> = ({
             ...initial,
             ...omit(questionDiff[id] ?? {}, 'options'),
           }
+          console.log(data)
           const options = initial.options.map(({ id: answerId, text }) => ({
             id: answerId,
             text: questionDiff[id]?.options?.[answerId] ?? text,
@@ -274,6 +278,21 @@ const Main: FC<QueryResult<'getQuizEdit'> & { quizKey: string }> = ({
                   <Button style="text" onClick={addAnswer(id)}>
                     Add Answer
                   </Button>
+                  <label>
+                    Correct:{' '}
+                    <select
+                      value={data.correctAnswer}
+                      onChange={({ target }) =>
+                        editQuestion(id, 'correctAnswer')(target.value)
+                      }
+                    >
+                      {options.map(({ id, text }) => (
+                        <option key={id} value={id}>
+                          {text}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
                 </>
               )}
               <Button

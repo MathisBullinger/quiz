@@ -31,6 +31,10 @@
   counter-reset: choice 0;
 }
 
+.multipleChoice[data-disabed='true'] {
+  opacity: 0.5;
+}
+
 .multipleChoice li {
   border: 1px solid var(--cl-text);
   border-radius: 5px;

@@ -16,6 +16,7 @@ export type Question = {
   previewText?: string
   answerType: 'multiple-choice' | 'free-text'
   options: AnswerOption[]
+  correctAnswer?: string
 }
 
 type AnswerOption = { id: string; text: string }

@@ -81,7 +81,11 @@ const Main: FC<ws.QuizInfoPlayer> = ({
           questionId={question.id}
           options={question.options}
           auth={player.auth}
+          disabled={question?.closes && Date.now() >= question?.closes}
         />
+      )}
+      {!!question?.correctAnswer && (
+        <p>The correct answer is: {question.correctAnswer}</p>
       )}
       {!!question?.closes && <Countdown closes={question.closes} />}
       {status === 'done' && <Done />}
@@ -116,20 +120,23 @@ const MultipleChoice: FC<{
   questionId: string
   auth: string
   options?: { id: string; text: string }[]
-}> = ({ options, quizId, questionId, auth }) => {
+  disabled?: boolean
+}> = ({ options, quizId, questionId, auth, disabled }) => {
   const [selected, setSelected] = useState<string>()
   const optionRef = useRef(options)
   optionRef.current = options
 
   useEffect(() => {
-    if (!selected) return
+    if (!selected || disabled) return
     ws.send({ type: 'answer', quizId, questionId, auth, answer: selected })
-  }, [selected, quizId, questionId, auth, selected])
+  }, [selected, quizId, questionId, auth, selected, disabled])
 
   useEffect(() => {
+    if (disabled) return
+
     const onKeyPress = (e: KeyboardEvent) => {
       const select = e.key.toLowerCase().charCodeAt(0) - 97
-      if (select < optionRef.current.length)
+      if (select >= 0 && select < optionRef.current.length)
         setSelected(optionRef.current[select].id)
     }
 
@@ -137,11 +144,11 @@ const MultipleChoice: FC<{
     return () => {
       window.removeEventListener('keypress', onKeyPress)
     }
-  }, [setSelected])
+  }, [setSelected || disabled])
 
   if (!options?.length) return null
   return (
-    <ul className={styles.multipleChoice}>
+    <ul className={styles.multipleChoice} data-disabled={disabled}>
       {options.map(({ id, text }) => (
         <li
           key={id}

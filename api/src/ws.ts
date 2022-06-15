@@ -127,17 +127,26 @@ const fetchQuestion = async (key: string, stage: string) => {
     `question#${stage.split('@').pop()}`
   )
   if (!question) return
-  if (stage.startsWith('preview')) return pick(question, 'id', 'previewText')
-  return pick(
-    question,
-    'id',
-    'previewText',
-    'question',
-    'answerType',
-    'options',
-    'timeLimit',
-    'closes'
-  )
+  let data: any = stage.startsWith('preview')
+    ? pick(question, 'sk', 'previewText')
+    : pick(
+        question,
+        'sk',
+        'previewText',
+        'question',
+        'answerType',
+        'options',
+        'timeLimit',
+        'closes',
+        ...((stage.startsWith('result') ? ['correctAnswer'] : []) as any)
+      )
+  if (data.correctAnswer && data.options)
+    data.correctAnswer = data.options.find(
+      ({ id }: any) => id === data.correctAnswer
+    )?.text
+  data.id = data.sk.split('#').pop()
+  delete data.sk
+  return data
 }
 
 const handlers: Record<
@@ -155,6 +164,7 @@ const handlers: Record<
       connectionId,
       auth: auth.createAuthToken(playerId),
       answers: [],
+      scores: [],
     }
 
     const [quizData] = await Promise.all([
@@ -206,6 +216,7 @@ const handlers: Record<
         connectionId,
         auth: playerId,
         answers: [],
+        scores: [],
       }
       quizData = (await db.quiz
         .update([quizId, 'status'])
@@ -257,17 +268,44 @@ const handlers: Record<
     if (status.status === 'done') return
 
     let advanceQuestion =
-      status.status === 'pending' || status.status.startsWith(`answer@`)
+      status.status === 'pending' || status.status.startsWith(`result@`)
 
+    const currentQuestionId = status.status.includes('@')
+      ? status.status.split('@').pop()
+      : null
     const currentQuestionIndex =
       status.status === 'pending'
         ? -1
-        : data.questions.indexOf(status.status.split('@').pop())
+        : data.questions.indexOf(currentQuestionId)
 
     let nextStatus: string
 
     let question: any = null
     if (advanceQuestion) {
+      if (currentQuestionId) {
+        const currentQuestion = await db.question.get(
+          quizKey,
+          `question#${currentQuestionId}`
+        )
+        if (currentQuestion.answerType === 'multiple-choice') {
+          console.log('rate answers', currentQuestionId)
+
+          await db.quiz.update([quizId, 'status']).push(
+            Object.fromEntries(
+              status.players.map(({ id, answers }, i) => {
+                const score =
+                  answers[currentQuestionIndex] ===
+                  currentQuestion.correctAnswer
+                    ? 1
+                    : 0
+                console.log(`score player ${id}: ${score}`)
+                return [`players[${i}].scores`, [score]] as const
+              }) as any
+            )
+          )
+        }
+      }
+
       nextStatus =
         currentQuestionIndex + 1 >= data.questions.length
           ? 'done'
@@ -280,7 +318,10 @@ const handlers: Record<
           : `answer@${nextStatus}`
       }
     } else {
-      nextStatus = `answer@${status.status.split('@').pop()}`
+      const nextStep = status.status.startsWith('preview@')
+        ? 'answer'
+        : 'result'
+      nextStatus = `${nextStep}@${status.status.split('@').pop()}`
     }
 
     const update: any = { status: nextStatus }

@@ -29,6 +29,7 @@ export const question = new DDB(
     previewText: String,
     answerType: String,
     options: [],
+    correctAnswer: String,
   },
   edit.client
 )

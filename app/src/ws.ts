@@ -66,6 +66,7 @@ export type QuizInfo = {
     answerType?: 'free-text' | 'multiple-choice'
     options?: { id: string; text: string }[]
     closes?: number
+    correctAnswer?: string
   }
 }
 
